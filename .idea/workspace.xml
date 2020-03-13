@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="48325d31-55cb-4ad1-9df2-ab163db0167f" name="Default Changelist" comment="" />
+    <list default="true" id="48325d31-55cb-4ad1-9df2-ab163db0167f" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/MultiServer.py" beforeDir="false" afterPath="$PROJECT_DIR$/MultiServer.py" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,7 +17,11 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1YncyltB4Mn8qoJh2x32JqRQq2h" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="RunDashboard">
     <option name="ruleStates">
       <list>
@@ -134,6 +140,17 @@
       <updated>1583582055465</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

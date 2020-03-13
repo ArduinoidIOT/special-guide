@@ -121,13 +121,14 @@ class Server:
     def _process_request(self, req):
         print(req.method, req.path)
         if req.method == 'OPTIONS' and req.path == '*':
-            return Response(204, headerlist=[['Allow', ', '.join(
-                ['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'DELETE'])]], content_len_autodetect=False).ready_socket_send()
+            return self._to_response(Response(204, headerlist=[['Allow', ', '.join(
+                ['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'DELETE'])]],
+                                              content_len_autodetect=False).ready_socket_send())
         for i, j in self._routes.items():
             if self._url_match(i, req.path):
                 if req.method == 'OPTIONS':
-                    return Response(204, headerlist=[['Allow', ', '.join(self._route_methods[i])]],
-                                    content_len_autodetect=False).ready_socket_send()
+                    return self._to_response(Response(204, headerlist=[['Allow', ', '.join(self._route_methods[i])]],
+                                                      content_len_autodetect=False).ready_socket_send())
                 elif req.method in self._route_methods[i]:
                     try:
                         resp = self._to_response(j(req))
