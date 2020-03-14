@@ -63,7 +63,7 @@ err_405_template = """
 
 
 class Server:
-    def __init__(self, port=5000, addr='127.0.0.1', custom_header_handlers=[], custom_responses={}):
+    def __init__(self, port=5000, addr='127.0.0.1', custom_header_handlers=[], custom_responses={}, keep_alive=True):
         self.sel = sels.DefaultSelector()
         self.conndata = {}
         self.sock = socket()
@@ -77,6 +77,7 @@ class Server:
         self._err_handlers = {}
         self._custom_header_handlers = custom_header_handlers
         self._cust_resps = custom_responses
+        self._keep_alive = keep_alive
 
     def run(self):
         while True:
@@ -88,7 +89,7 @@ class Server:
     def _accept(self, sock):
         conn, addr = sock.accept()  # Should be ready
         conn.setblocking(False)
-        self.conndata[conn] = Request(cust_handlers=self._custom_header_handlers)
+        self.conndata[conn] = Request(cust_handlers=self._custom_header_handlers, addr=addr)
         self.sel.register(conn, sels.EVENT_READ, self._read)
 
     def _read(self, sock):
@@ -111,14 +112,20 @@ class Server:
                 return
             if self.conndata[sock].data_ready:
                 sock.send(self._process_request(self.conndata[sock]))
-                self.conndata[sock] = Request(self.conndata[sock].overflow, self._custom_header_handlers)
+                if self._keep_alive:
+                    self.conndata[sock] = Request(self.conndata[sock].overflow, self._custom_header_handlers,
+                                                  addr=self.conndata[sock].addr)
+                else:
+                    del self.conndata[sock]
+                    self.sel.unregister(sock)
+                    sock.close()
         else:
             del self.conndata[sock]
             self.sel.unregister(sock)
             sock.close()
 
     def _process_request(self, req):
-        print(req.method, req.path)
+        print(req.method, req.path, req.addr)
         if req.method == 'OPTIONS' and req.path == '*':
             return self._to_response(Response(204, headerlist=[['Allow', ', '.join(
                 ['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'DELETE'])]],
@@ -205,7 +212,7 @@ class Server:
             else:
                 resp = self._default_500_isa_handler()
         resp.add_headers(['Server', 'NoobServer v1.0'])
-        resp.add_headers(['Connection', 'keep-alive'])
+        resp.add_headers(['Connection', 'keep-alive' if self._keep_alive else 'close'])
         resp.add_headers(['Date', datetime.utcnow().strftime(http_date_format)])
         return resp
 
@@ -231,4 +238,3 @@ class Server:
 
     def _default_411_lreq_handler(self):
         return NullResponse(411)
-

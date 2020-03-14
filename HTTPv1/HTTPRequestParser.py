@@ -16,7 +16,7 @@ def _list_slice_into_two_include_in_right(list, index):
 
 
 class Request:
-    def __init__(self, overflow=b'', cust_handlers=None):
+    def __init__(self, overflow=b'', cust_handlers=None,addr=()):
         if cust_handlers is None:
             cust_handlers = []
         self.cust_handlers = cust_handlers
@@ -33,6 +33,7 @@ class Request:
         self.data_ready = False
         self.headers_over = False
         self.update(overflow)
+        self.addr = addr
 
     def update(self, data):
         if self.data_ready:
