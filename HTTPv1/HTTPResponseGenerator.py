@@ -89,7 +89,7 @@ class Response:
         self.headers.append(header)
 
     def ready_socket_send(self, send_data=True):
-        data = "HTTP/1.0 " + self.http_resp_code + " " + self.resp_name + '\r\n'
+        data = "HTTP/1.1 " + self.http_resp_code + " " + self.resp_name + '\r\n'
         for i, j in self.headers:
             data += i + ": " + j + '\r\n'
 
