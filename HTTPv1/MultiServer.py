@@ -3,6 +3,7 @@ from socket import socket, SOL_SOCKET, SO_REUSEADDR
 from HTTPRequestParser import Request
 from HTTPResponseGenerator import Response, NullResponse
 from datetime import datetime
+import re
 
 http_date_format = "%a, %d %b %Y %H:%M:%S GMT"
 err_500_template = """
@@ -110,9 +111,7 @@ class Server:
                 return
             if self.conndata[sock].data_ready:
                 sock.send(self._process_request(self.conndata[sock]))
-                del self.conndata[sock]
-                self.sel.unregister(sock)
-                sock.close()
+                self.conndata[sock] = Request(self.conndata[sock].overflow, self._custom_header_handlers)
         else:
             del self.conndata[sock]
             self.sel.unregister(sock)
@@ -151,9 +150,9 @@ class Server:
                 break
         else:
             try:
-                resp = self._err_handlers[404]()
+                resp = self._to_response(self._err_handlers[404](req))
             except:
-                resp = self._default_404_not_found_handler()
+                resp = self._to_response(self._default_404_not_found_handler())
         if int(resp.http_resp_code) in [200, 201, 202, 203, 206] and req.method == 'HEAD':
             resp.http_resp_code = '204'
             resp.resp_name = 'No Content'
@@ -167,7 +166,7 @@ class Server:
 
     @staticmethod
     def _url_match(parser_str, parsed_str):
-        return parsed_str == parser_str
+        return bool(re.match("^" + parser_str + "$", parsed_str))
 
     def _default_400_bad_request_handler(self):
         return NullResponse(400, cust_resp_codes=self._cust_resps)
@@ -206,6 +205,7 @@ class Server:
             else:
                 resp = self._default_500_isa_handler()
         resp.add_headers(['Server', 'NoobServer v1.0'])
+        resp.add_headers(['Connection', 'keep-alive'])
         resp.add_headers(['Date', datetime.utcnow().strftime(http_date_format)])
         return resp
 
@@ -229,19 +229,6 @@ class Server:
 
         return nothing
 
+    def _default_411_lreq_handler(self):
+        return NullResponse(411)
 
-if __name__ == '__main__':
-    k = Server(port=3000)
-
-
-    @k.route('/')
-    def noob(req):
-        raise NotImplementedError
-
-
-    @k.error_handler(404)
-    def pro(req):
-        pass
-
-
-    k.run()
