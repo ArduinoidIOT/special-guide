@@ -143,7 +143,6 @@ class Server:
                         except:
                             resp = self._to_response(self._default_501_noti_handler())
                     except:
-                        raise
                         try:
                             resp = self._to_response(self._err_handlers[500]())
                         except:
@@ -168,7 +167,8 @@ class Server:
         return resp.ready_socket_send(send_data=not req.method == 'HEAD')
 
     def register_route(self, route, handler, methods=[]):
-        methods += ['GET', 'HEAD', 'OPTIONS']
+        route = re.compile(route)
+        methods += ['HEAD', 'OPTIONS']
         methods = list(set(methods))
         self._routes[route] = handler
         self._route_methods[route] = methods
