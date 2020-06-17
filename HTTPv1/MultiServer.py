@@ -125,7 +125,6 @@ class Server:
             sock.close()
 
     def _process_request(self, req):
-        print(req.method, req.path, req.addr)
         if req.method == 'OPTIONS' and req.path == '*':
             return self._to_response(Response(204, headerlist=[['Allow', ', '.join(
                 ['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'DELETE'])]],
@@ -144,10 +143,12 @@ class Server:
                         except:
                             resp = self._to_response(self._default_501_noti_handler())
                     except:
+                        raise
                         try:
                             resp = self._to_response(self._err_handlers[500]())
                         except:
                             resp = self._to_response(self._default_500_isa_handler())
+
                 else:
                     try:
                         resp = self._to_response(self._err_handlers[405]())
@@ -163,6 +164,7 @@ class Server:
         if int(resp.http_resp_code) in [200, 201, 202, 203, 206] and req.method == 'HEAD':
             resp.http_resp_code = '204'
             resp.resp_name = 'No Content'
+        print(req.method, req.path, req.addr, resp.http_resp_code)
         return resp.ready_socket_send(send_data=not req.method == 'HEAD')
 
     def register_route(self, route, handler, methods=[]):
