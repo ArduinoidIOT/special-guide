@@ -93,36 +93,38 @@ class Server:
         self.sel.register(conn, sels.EVENT_READ, self._read)
 
     def _read(self, sock):
-        data = sock.recv(1000)  # Should be ready
-
-        if data:
-            try:
-                self.conndata[sock].update(data)
-                if self.conndata[sock].headers_over and ['Expect', '100-continue'] in self.conndata[sock].headers:
-                    self.sock.send(NullResponse(100).ready_socket_send())
-            except:
-                try:
-                    resp = self._err_handlers[400]()
-                except:
-                    resp = self._default_400_bad_request_handler
-                self.sock.send(resp.ready_socket_send())
-                del self.conndata[sock]
-                self.sel.unregister(sock)
-                sock.close()
-                return
-            if self.conndata[sock].data_ready:
-                sock.send(self._process_request(self.conndata[sock]))
-                if self._keep_alive:
-                    self.conndata[sock] = Request(self.conndata[sock].overflow, self._custom_header_handlers,
-                                                  addr=self.conndata[sock].addr)
-                else:
-                    del self.conndata[sock]
-                    self.sel.unregister(sock)
-                    sock.close()
-        else:
+        try:
+            data = sock.recv(1000)  # Should be ready
+        except ConnectionResetError:
+            return
+        if not data:
             del self.conndata[sock]
             self.sel.unregister(sock)
             sock.close()
+            return
+        try:
+            self.conndata[sock].update(data)
+            if self.conndata[sock].headers_over and ['Expect', '100-continue'] in self.conndata[sock].headers:
+                self.sock.send(NullResponse(100).ready_socket_send())
+        except:
+            try:
+                resp = self._err_handlers[400]()
+            except:
+                resp = self._default_400_bad_request_handler()
+            self.sock.send(resp.ready_socket_send())
+            del self.conndata[sock]
+            self.sel.unregister(sock)
+            sock.close()
+            return
+        if self.conndata[sock].data_ready:
+            sock.send(self._process_request(self.conndata[sock]))
+            if self._keep_alive:
+                self.conndata[sock] = Request(self.conndata[sock].overflow, self._custom_header_handlers,
+                                              addr=self.conndata[sock].addr)
+            else:
+                del self.conndata[sock]
+                self.sel.unregister(sock)
+                sock.close()
 
     def _process_request(self, req):
         if req.method == 'OPTIONS' and req.path == '*':
@@ -167,7 +169,7 @@ class Server:
         return resp.ready_socket_send(send_data=not req.method == 'HEAD')
 
     def register_route(self, route, handler, methods=[]):
-        route = re.compile(route)
+        route = re.compile(f"^{route}$")
         methods += ['HEAD', 'OPTIONS']
         methods = list(set(methods))
         self._routes[route] = handler
@@ -175,7 +177,7 @@ class Server:
 
     @staticmethod
     def _url_match(parser_str, parsed_str):
-        return bool(re.match("^" + parser_str + "$", parsed_str))
+        return bool(parser_str.match(parsed_str))
 
     def _default_400_bad_request_handler(self):
         return NullResponse(400, cust_resp_codes=self._cust_resps)
@@ -223,7 +225,7 @@ class Server:
 
     def route(self, route, **kwargs):
         if 'methods' not in kwargs:
-            methods = []
+            methods = ['GET']
         else:
             methods = kwargs['methods']
 
